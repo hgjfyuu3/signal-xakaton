@@ -1,5 +1,8 @@
 package ru.xakaton.signal;
 
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
 import api.longpoll.bots.exceptions.VkApiException;
 import jakarta.annotation.PostConstruct;
 import org.springframework.boot.SpringApplication;
