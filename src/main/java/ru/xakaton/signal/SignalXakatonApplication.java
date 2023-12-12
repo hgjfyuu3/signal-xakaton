@@ -13,6 +13,7 @@ import java.util.concurrent.CompletableFuture;
 @SpringBootApplication
 public class SignalXakatonApplication {
 
+
     public static void main(String[] args) {
         SpringApplication.run(SignalXakatonApplication.class, args);
     }
