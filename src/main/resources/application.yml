@@ -1,0 +1,6 @@
+giga:
+  authorization-token: Bearer YjBlZGMwYjktMTY5Ni00ODMyLWEyNmYtMmRhZTRkNmMzZmQxOjE4MTkwNzk3LTUyNzgtNDU2ZC05OWZjLTgwNDVjNzI3YTU2Nw==
+vk:
+  api:
+    access-token=YOUR_ACCESS_TOKEN
+    version=5.131
