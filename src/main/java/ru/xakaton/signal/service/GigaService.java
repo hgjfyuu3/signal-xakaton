@@ -65,7 +65,7 @@ public class GigaService {
 
     public String requestGiga(String question, Integer userId, String role) {
         ChatRequest chatRequest = getChatRequest(question, userId, role);
-        System.err.println(BodyInserters.fromValue(chatRequest));
+        System.err.println(chatRequest);
         return webClient.post()
             .uri(GIGA_CHAT_API_URL)
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -101,10 +101,8 @@ public class GigaService {
         if(chatMessageList == null){
             chatMessageList = new ArrayList<>();
         }
-        chatMessageList.add(userMessage);
         chatMessageList.add(systemMessage);
         chatMessageList.add(userMessage);
-        chatMessageList.add(systemMessage);
         chatRequest.setMessages(chatMessageList);
         return chatRequest;
     }

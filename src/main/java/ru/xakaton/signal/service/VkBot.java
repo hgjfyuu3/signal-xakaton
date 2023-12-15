@@ -56,9 +56,7 @@ public class VkBot extends LongPollBot {
                     send(userId, getStartedKeyboard());
                     gigaService.getChats().remove(userId);
                 } else {
-                    System.err.println("DVA");
                     send(userId, gigaService.requestGiga(message.getText(), userId, "Представь что ты искусственный интеллект администрации и ответь на вопрос"), createAskQuestionKeyboard());
-                    System.err.println("RAZ");
                 }
             }
 
@@ -83,16 +81,16 @@ public class VkBot extends LongPollBot {
     private void processUserMessage(Message message) throws VkApiException {
         String userText = message.getText().toLowerCase();
 
-        if (userText.contains("1")) {
+        if (userText.equalsIgnoreCase("Вопрос по нормативной документации")) {
             userStateMap.put(message.getPeerId(), UserState.DOCUMENTS);
             send(message.getPeerId(), "Напишите ваш вопрос по нормативной документации");
-        } else if (userText.contains("2")) {
+        } else if (userText.equalsIgnoreCase("Задать другой вопрос")) {
             userStateMap.put(message.getPeerId(), UserState.ASK_QUESTION);
             send(message.getPeerId(), "Напишите ваш вопрос");
-        } else if (userText.contains("3")) {
+        } else if (userText.equalsIgnoreCase("Создать обращение")) {
             userStateMap.put(message.getPeerId(), UserState.NITING);
             send(message.getPeerId(), "Напишите ваше обращение");
-        } else if (userText.contains("4")) {
+        } else if (userText.equalsIgnoreCase("Самые популярные вопросы и ответы на них")) {
             String faqText = "1. Как получить помощь по использованию ресурсов/сервисов?\n" +
                 "   - Ответ: Обращайтесь в нашу службу поддержки по указанным контактам, где опытные специалисты готовы помочь вам с любыми вопросами.\n" +
                 "\n" +
@@ -160,16 +158,19 @@ public class VkBot extends LongPollBot {
     }
 
     private Keyboard getStartedKeyboard() {
-        List<Button> buttons = Arrays.asList(
-            createButton("1", Button.Color.POSITIVE),//дока
-            createButton("2", Button.Color.POSITIVE),//вопрос
-            createButton("3", Button.Color.POSITIVE), // обращение
-            createButton("4", Button.Color.POSITIVE)// топ вопросов
+        List<Button> buttons1 = Arrays.asList(
+            createButton("Вопрос по нормативной документации", Button.Color.POSITIVE) //дока
         );
-
-        List<List<Button>> rows = List.of(buttons);
-
-        return new Keyboard(rows).setInline(true);
+        List<Button> buttons2 = Arrays.asList(
+            createButton("Задать другой вопрос", Button.Color.POSITIVE) //вопрос
+        );
+        List<Button> buttons3 = Arrays.asList(
+            createButton("Создать обращение", Button.Color.POSITIVE) // обращение
+        );
+        List<Button> buttons4 = Arrays.asList(
+            createButton("Самые популярные вопросы и ответы на них", Button.Color.POSITIVE) // топ вопросов
+        );
+        return new Keyboard(List.of(buttons1, buttons2, buttons3, buttons4)).setInline(true);
     }
 
     private Button createButton(String label, Button.Color color) {
