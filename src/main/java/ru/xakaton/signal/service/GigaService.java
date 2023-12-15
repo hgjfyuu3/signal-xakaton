@@ -1,26 +1,26 @@
 package ru.xakaton.signal.service;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -33,66 +33,80 @@ public class GigaService {
     @Value("${giga.authorization-token}")
     private String authorizationToken;
 
+    @Getter
+    private Map<Integer, List<ChatMessage>> chats = new ConcurrentHashMap<>();
+
+    private static final String GIGA_OAUTH_API_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth";
+    private static final String GIGA_CHAT_API_URL = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions";
+    private static final String GIGA_SCOPE = "GIGACHAT_API_PERS";
+
     @PostConstruct
-    public void init() throws InterruptedException {
-        accessToken = getAccessToken(authorizationToken);
-        log.info(accessToken);
-        Thread.sleep(1000L);
-        System.err.println(requestGiga("Кто убил Марка?"));
+    public void init() {
+        getAccessToken();
     }
 
-    private String getAccessToken(String authorizationToken) {
-        String apiUrl = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth";
-
-        String scope = "GIGACHAT_API_PERS";
-        try {
-            Mono<RequestAccessToken> responseMono = webClient.post()
-                .uri(apiUrl)
-                .header("RqUID", UUID.randomUUID().toString())
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-                .header(HttpHeaders.AUTHORIZATION, authorizationToken)
-                .body(BodyInserters.fromFormData("scope", scope))
-                .retrieve()
-                .bodyToMono(RequestAccessToken.class);
-            return Objects.requireNonNull(responseMono.block()).getAccessToken();
-        } catch (Exception e) {
-            log.error("Произошла ошибка при получение токена.", e);
-        }
-        return "";
+    @Scheduled(fixedDelay = 600000)
+    private void getAccessToken() {
+        webClient.post()
+            .uri(GIGA_OAUTH_API_URL)
+            .header("RqUID", UUID.randomUUID().toString())
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+            .header(HttpHeaders.AUTHORIZATION, authorizationToken)
+            .body(BodyInserters.fromFormData("scope", GIGA_SCOPE))
+            .retrieve()
+            .bodyToMono(RequestAccessToken.class)
+            .doOnNext(response -> {
+                log.info("Access token expires at: {}", response.getExpiresAt());
+                accessToken = response.getAccessToken();
+            })
+            .doOnError(error -> log.error("Error while obtaining token.", error))
+            .subscribe();
     }
 
-    public ChatResponse requestGiga(String question) {
+    public String requestGiga(String question, Integer userId, String role) {
+        ChatRequest chatRequest = getChatRequest(question, userId, role);
+        System.err.println(BodyInserters.fromValue(chatRequest));
+        return webClient.post()
+            .uri(GIGA_CHAT_API_URL)
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+            .body(BodyInserters.fromValue(chatRequest))
+            .retrieve()
+            .bodyToMono(ChatResponse.class)
+            .onErrorResume(e -> {
+                log.error("Error while asking question.", e);
+                return Mono.empty();
+            })
+            .block().getChoices().get(0).getMessage().getContent();
+    }
 
+    @NotNull
+    private ChatRequest getChatRequest(String question, Integer userId, String role) {
         ChatRequest chatRequest = new ChatRequest();
         chatRequest.setModel("GigaChat:latest");
         chatRequest.setTemperature(0.87);
         chatRequest.setN(1);
         chatRequest.setRepetition_penalty(1.07);
 
-        ChatRequest.ChatMessage systemMessage = new ChatRequest.ChatMessage();
-        systemMessage.setRole("system");
-        systemMessage.setContent("Отвечай как научный сотрудник");
+        List<ChatMessage> chatMessageList = chats.get(userId);
+        ChatMessage systemMessage = new ChatMessage();
 
-        ChatRequest.ChatMessage userMessage = new ChatRequest.ChatMessage();
+        ChatMessage userMessage = new ChatMessage();
         userMessage.setRole("user");
         userMessage.setContent(question);
 
-        chatRequest.setMessages(List.of(systemMessage, userMessage));
+        systemMessage.setRole("system");
+        systemMessage.setContent(role);
 
-        try {
-            Mono<String> response = webClient.post()
-                .uri(new URI("https://gigachat.devices.sberbank.ru/api/v1/chat/completions"))
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .body(BodyInserters.fromValue(chatRequest))
-                .retrieve()
-                .bodyToMono(String.class);
-            System.err.println(response.block());
-            return null;
-        } catch (Exception e) {
-            log.error("Произошла ошибка при задавании вопроса.", e);
+        if(chatMessageList == null){
+            chatMessageList = new ArrayList<>();
         }
-        return null;
+        chatMessageList.add(userMessage);
+        chatMessageList.add(systemMessage);
+        chatMessageList.add(userMessage);
+        chatMessageList.add(systemMessage);
+        chatRequest.setMessages(chatMessageList);
+        return chatRequest;
     }
 
     @Data
@@ -110,12 +124,12 @@ public class GigaService {
         private int n;
         private double repetition_penalty;
         private List<ChatMessage> messages;
+    }
 
-        @Data
-        public static class ChatMessage {
-            private String role;
-            private String content;
-        }
+    @Data
+    public static class ChatMessage {
+        private String role;
+        private String content;
     }
 
     @Data
