@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GigaService {
 
     private final WebClient webClient;
+
     private String accessToken;
 
     @Value("${giga.authorization-token}")
@@ -48,36 +49,36 @@ public class GigaService {
     @Scheduled(fixedDelay = 600000)
     private void getAccessToken() {
         webClient.post()
-            .uri(GIGA_OAUTH_API_URL)
-            .header("RqUID", UUID.randomUUID().toString())
-            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-            .header(HttpHeaders.AUTHORIZATION, authorizationToken)
-            .body(BodyInserters.fromFormData("scope", GIGA_SCOPE))
-            .retrieve()
-            .bodyToMono(RequestAccessToken.class)
-            .doOnNext(response -> {
-                log.info("Access token expires at: {}", response.getExpiresAt());
-                accessToken = response.getAccessToken();
-            })
-            .doOnError(error -> log.error("Error while obtaining token.", error))
-            .subscribe();
+                .uri(GIGA_OAUTH_API_URL)
+                .header("RqUID", UUID.randomUUID().toString())
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+                .header(HttpHeaders.AUTHORIZATION, authorizationToken)
+                .body(BodyInserters.fromFormData("scope", GIGA_SCOPE))
+                .retrieve()
+                .bodyToMono(RequestAccessToken.class)
+                .doOnNext(response -> {
+                    log.info("Access token expires at: {}", response.getExpiresAt());
+                    accessToken = response.getAccessToken();
+                })
+                .doOnError(error -> log.error("Error while obtaining token.", error))
+                .subscribe();
     }
 
     public String requestGiga(String question, Integer userId, String role) {
         ChatRequest chatRequest = getChatRequest(question, userId, role);
         System.err.println(chatRequest);
         return webClient.post()
-            .uri(GIGA_CHAT_API_URL)
-            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-            .body(BodyInserters.fromValue(chatRequest))
-            .retrieve()
-            .bodyToMono(ChatResponse.class)
-            .onErrorResume(e -> {
-                log.error("Error while asking question.", e);
-                return Mono.empty();
-            })
-            .block().getChoices().get(0).getMessage().getContent();
+                .uri(GIGA_CHAT_API_URL)
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .body(BodyInserters.fromValue(chatRequest))
+                .retrieve()
+                .bodyToMono(ChatResponse.class)
+                .onErrorResume(e -> {
+                    log.error("Error while asking question.", e);
+                    return Mono.empty();
+                })
+                .block().getChoices().get(0).getMessage().getContent();
     }
 
     @NotNull
@@ -98,7 +99,7 @@ public class GigaService {
         systemMessage.setRole("system");
         systemMessage.setContent(role);
 
-        if(chatMessageList == null){
+        if (chatMessageList == null) {
             chatMessageList = new ArrayList<>();
         }
         chatMessageList.add(systemMessage);

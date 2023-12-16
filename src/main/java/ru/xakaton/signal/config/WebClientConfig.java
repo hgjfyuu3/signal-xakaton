@@ -17,9 +17,10 @@ public class WebClientConfig {
     @Bean
     public WebClient createWebClient() throws SSLException {
         SslContext sslContext = SslContextBuilder
-            .forClient()
-            .trustManager(InsecureTrustManagerFactory.INSTANCE)
-            .build();
+                .forClient()
+                .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                .build();
         return WebClient.builder().clientConnector(new ReactorClientHttpConnector(HttpClient.newConnection().secure(t -> t.sslContext(sslContext)))).build();
     }
+
 }
