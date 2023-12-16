@@ -64,30 +64,37 @@ public class GigaService {
                 .subscribe();
     }
 
-    public String requestGiga(String question, Integer userId, String role) {
-        ChatRequest chatRequest = getChatRequest(question, userId, role);
+    public String requestGiga(String question, Integer userId, String role, boolean isSaveMessage) {
+        ChatRequest chatRequest = getChatRequest(question, userId, role, isSaveMessage);
         System.err.println(chatRequest);
-        return webClient.post()
-                .uri(GIGA_CHAT_API_URL)
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .body(BodyInserters.fromValue(chatRequest))
-                .retrieve()
-                .bodyToMono(ChatResponse.class)
-                .onErrorResume(e -> {
-                    log.error("Error while asking question.", e);
-                    return Mono.empty();
-                })
-                .block().getChoices().get(0).getMessage().getContent();
+        String response = webClient.post()
+            .uri(GIGA_CHAT_API_URL)
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+            .body(BodyInserters.fromValue(chatRequest))
+            .retrieve()
+            .bodyToMono(ChatResponse.class)
+            .onErrorResume(e -> {
+                log.error("Error while asking question.", e);
+                return Mono.empty();
+            })
+            .block().getChoices().get(0).getMessage().getContent();
+        if (isSaveMessage) {
+            List<ChatMessage> chat = chats.get(userId);
+            ChatMessage chatMessage = chat.get(chat.size() - 1);
+            chatMessage.setRole("assistant");
+            chatMessage.setContent(response);
+        }
+        return response;
     }
 
     @NotNull
-    private ChatRequest getChatRequest(String question, Integer userId, String role) {
+    private ChatRequest getChatRequest(String question, Integer userId, String role, boolean isSaveMessage) {
         ChatRequest chatRequest = new ChatRequest();
         chatRequest.setModel("GigaChat:latest");
-        chatRequest.setTemperature(0.87);
+        chatRequest.setTemperature(01.87);
         chatRequest.setN(1);
-        chatRequest.setRepetition_penalty(1.07);
+        chatRequest.setRepetition_penalty(0.99);
 
         List<ChatMessage> chatMessageList = chats.get(userId);
         ChatMessage systemMessage = new ChatMessage();
@@ -96,14 +103,26 @@ public class GigaService {
         userMessage.setRole("user");
         userMessage.setContent(question);
 
-        systemMessage.setRole("system");
+        systemMessage.setRole("assistant");
         systemMessage.setContent(role);
 
         if (chatMessageList == null) {
             chatMessageList = new ArrayList<>();
         }
-        chatMessageList.add(systemMessage);
-        chatMessageList.add(userMessage);
+        if (isSaveMessage) {
+            if (chatMessageList.isEmpty()) {
+                chatMessageList.add(systemMessage);
+                chatMessageList.add(userMessage);
+                chats.put(userId, chatMessageList);
+            } else {
+                chatMessageList.add(systemMessage);
+                chats.put(userId, chatMessageList);
+                chatMessageList.add(userMessage);
+            }
+        } else {
+            chatMessageList.add(systemMessage);
+            chatMessageList.add(userMessage);
+        }
         chatRequest.setMessages(chatMessageList);
         return chatRequest;
     }
