@@ -41,11 +41,10 @@ public class VkBot extends LongPollBot {
                 send(userId, welcomeMessage, getStartedKeyboard());
             } else if (userStateMap.get(message.getPeerId()) == UserState.ASK_QUESTION) {
                 if (message.getText().equals("Закончить диалог и вернуться назад")) {
-                    send(userId, getStartedKeyboard());
+                    send(userId, "Выберите, интересующую вас тему, и я постараюсь предоставить вам соответствующую информацию. Если у вас есть конкретные вопросы, не стесняйтесь задавать!", getStartedKeyboard());
                     gigaService.getChats().remove(userId);
                     userStateMap.put(message.getPeerId(), UserState.START);
-                }
-                if (message.getText().equals("Закончить диалог и задать новый вопрос")) {
+                } else if (message.getText().equals("Закончить диалог и задать новый вопрос")) {
                     send(userId, "Напишите ваш вопрос");
                     gigaService.getChats().remove(userId);
                 } else {
@@ -125,19 +124,12 @@ public class VkBot extends LongPollBot {
             .execute();
     }
 
-    public void send(Integer peerId, Keyboard keyboard) throws VkApiException {
-        vk.messages.send()
-            .setPeerId(peerId)
-            .setKeyboard(keyboard)
-            .execute();
-    }
-
     private Keyboard createAskQuestionKeyboard() {
         List<Button> buttons1 = Arrays.asList(
-            createButton("Закончить диалог и вернуться назад", Button.Color.POSITIVE) //дока
+            createButton("Закончить диалог и вернуться назад", Button.Color.POSITIVE)
         );
         List<Button> buttons2 = Arrays.asList(
-            createButton("Закончить диалог и задать новый вопрос", Button.Color.POSITIVE) //вопрос
+            createButton("Закончить диалог и задать новый вопрос", Button.Color.POSITIVE)
         );
 
         return new Keyboard(List.of(buttons1, buttons2)).setInline(true);
