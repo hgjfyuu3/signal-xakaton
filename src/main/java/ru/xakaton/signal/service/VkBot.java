@@ -7,13 +7,11 @@ import api.longpoll.bots.model.objects.additional.Keyboard;
 import api.longpoll.bots.model.objects.additional.buttons.Button;
 import api.longpoll.bots.model.objects.additional.buttons.TextButton;
 import api.longpoll.bots.model.objects.basic.Message;
-import com.google.gson.JsonObject;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import ru.xakaton.signal.model.UserState;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -37,41 +35,29 @@ public class VkBot extends LongPollBot {
             Integer userId = message.getPeerId();
             if (userStateMap.get(message.getPeerId()) == UserState.START) {
                 processUserMessage(message);
-                return;
-            }
-
-            if (userStateMap.get(message.getPeerId()) == null) {
+            } else if (userStateMap.get(message.getPeerId()) == null) {
                 String welcomeMessage = "Привет! Добро пожаловать в информационного помощника районной администрации! Я готов помочь вам узнать о планах развития нашего района. Выберите, интересующую вас тему, и я постараюсь предоставить вам соответствующую информацию. Если у вас есть конкретные вопросы, не стесняйтесь задавать!";
                 userStateMap.put(message.getPeerId(), UserState.START);
                 send(userId, welcomeMessage, getStartedKeyboard());
-            }
-
-            if (userStateMap.get(message.getPeerId()) == UserState.ASK_QUESTION) {
+            } else if (userStateMap.get(message.getPeerId()) == UserState.ASK_QUESTION) {
                 if (message.getText().equals("Закончить диалог и вернуться назад")) {
                     send(userId, getStartedKeyboard());
                     gigaService.getChats().remove(userId);
                     userStateMap.put(message.getPeerId(), UserState.START);
                 }
                 if (message.getText().equals("Закончить диалог и задать новый вопрос")) {
-                    send(userId, getStartedKeyboard());
+                    send(userId, "Напишите ваш вопрос");
                     gigaService.getChats().remove(userId);
                 } else {
-                    send(userId, gigaService.requestGiga(message.getText(), userId, "Представь что ты искусственный интеллект администрации и ответь на вопрос"), createAskQuestionKeyboard());
+                    send(userId, gigaService.requestGiga(message.getText(), userId, "Представь что ты искусственный интеллект администрации и ответь на вопрос", true), createAskQuestionKeyboard());
                 }
-            }
-
-            if (userStateMap.get(message.getPeerId()) == UserState.DOCUMENTS) {
+            } else if (userStateMap.get(message.getPeerId()) == UserState.DOCUMENTS) {
                 //todo добавить обработку вопроса по документам
-            }
-
-            if (userStateMap.get(message.getPeerId()) == UserState.NITING) {
-                send(userId, gigaService.requestGiga(message.getText(), userId, "Представь что ты искусственный интеллект администрации и ответь на обращение "), getStartedKeyboard());
+            } else if (userStateMap.get(message.getPeerId()) == UserState.NITING) {
+                send(userId, gigaService.requestGiga(message.getText(), userId, "Представь что ты искусственный интеллект городской администрации, тебе нужно пожалеть пользователя и зарегистрировать обращение. Не продолжай диалог", false), getStartedKeyboard());
                 userStateMap.put(message.getPeerId(), UserState.START);
-            }
-
-            if (userStateMap.get(message.getPeerId()) == UserState.NITING) {
-                send(userId, gigaService.requestGiga(message.getText(), userId, "Представь что ты искусственный интеллект администрации и ответь на обращение "), getStartedKeyboard());
-                userStateMap.put(message.getPeerId(), UserState.START);
+            } else {
+                send(userId, "К сожалению, я не знаю такой команды.", getStartedKeyboard());
             }
         } catch (VkApiException e) {
             e.printStackTrace();
@@ -81,10 +67,10 @@ public class VkBot extends LongPollBot {
     private void processUserMessage(Message message) throws VkApiException {
         String userText = message.getText().toLowerCase();
 
-        if (userText.equalsIgnoreCase("Вопрос по нормативной документации")) {
+        if (userText.equalsIgnoreCase("Уточнить нормативную документацию")) {
             userStateMap.put(message.getPeerId(), UserState.DOCUMENTS);
             send(message.getPeerId(), "Напишите ваш вопрос по нормативной документации");
-        } else if (userText.equalsIgnoreCase("Задать другой вопрос")) {
+        } else if (userText.equalsIgnoreCase("Задать вопрос")) {
             userStateMap.put(message.getPeerId(), UserState.ASK_QUESTION);
             send(message.getPeerId(), "Напишите ваш вопрос");
         } else if (userText.equalsIgnoreCase("Создать обращение")) {
@@ -147,22 +133,22 @@ public class VkBot extends LongPollBot {
     }
 
     private Keyboard createAskQuestionKeyboard() {
-        List<Button> buttons = Arrays.asList(
-            createButton("Закончить диалог и вернуться назад", Button.Color.POSITIVE),
-            createButton("Закончить диалог и задать новый вопрос", Button.Color.POSITIVE)
+        List<Button> buttons1 = Arrays.asList(
+            createButton("Закончить диалог и вернуться назад", Button.Color.POSITIVE) //дока
+        );
+        List<Button> buttons2 = Arrays.asList(
+            createButton("Закончить диалог и задать новый вопрос", Button.Color.POSITIVE) //вопрос
         );
 
-        List<List<Button>> rows = List.of(buttons);
-
-        return new Keyboard(rows).setInline(true);
+        return new Keyboard(List.of(buttons1, buttons2)).setInline(true);
     }
 
     private Keyboard getStartedKeyboard() {
         List<Button> buttons1 = Arrays.asList(
-            createButton("Вопрос по нормативной документации", Button.Color.POSITIVE) //дока
+            createButton("Уточнить нормативную документацию", Button.Color.POSITIVE) //дока
         );
         List<Button> buttons2 = Arrays.asList(
-            createButton("Задать другой вопрос", Button.Color.POSITIVE) //вопрос
+            createButton("Задать вопрос", Button.Color.POSITIVE) //вопрос
         );
         List<Button> buttons3 = Arrays.asList(
             createButton("Создать обращение", Button.Color.POSITIVE) // обращение
