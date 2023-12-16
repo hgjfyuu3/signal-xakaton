@@ -68,17 +68,17 @@ public class GigaService {
         ChatRequest chatRequest = getChatRequest(question, userId, role, isSaveMessage);
         System.err.println(chatRequest);
         String response = webClient.post()
-            .uri(GIGA_CHAT_API_URL)
-            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-            .body(BodyInserters.fromValue(chatRequest))
-            .retrieve()
-            .bodyToMono(ChatResponse.class)
-            .onErrorResume(e -> {
-                log.error("Error while asking question.", e);
-                return Mono.empty();
-            })
-            .block().getChoices().get(0).getMessage().getContent();
+                .uri(GIGA_CHAT_API_URL)
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .body(BodyInserters.fromValue(chatRequest))
+                .retrieve()
+                .bodyToMono(ChatResponse.class)
+                .onErrorResume(e -> {
+                    log.error("Error while asking question.", e);
+                    return Mono.empty();
+                })
+                .block().getChoices().get(0).getMessage().getContent();
         if (isSaveMessage) {
             List<ChatMessage> chat = chats.get(userId);
             ChatMessage chatMessage = chat.get(chat.size() - 1);

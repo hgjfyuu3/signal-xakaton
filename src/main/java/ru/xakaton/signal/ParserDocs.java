@@ -10,6 +10,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import ru.xakaton.signal.service.EsService;
 
+import java.util.concurrent.CompletableFuture;
+
 @Component
 @Slf4j
 @RequiredArgsConstructor
@@ -58,9 +60,8 @@ public class ParserDocs {
     }
 
     @Scheduled(fixedDelay = 3_600_000L)
-//    @Scheduled(fixedDelay = 20_000L)
     private void runParseDocs() {
-        parseLegalActs();
+        CompletableFuture.runAsync(this::parseLegalActs);
     }
 
 }

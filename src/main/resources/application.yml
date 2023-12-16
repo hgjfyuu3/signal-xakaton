@@ -1,8 +1,10 @@
 giga:
   authorization-token: Bearer YjBlZGMwYjktMTY5Ni00ODMyLWEyNmYtMmRhZTRkNmMzZmQxOjE4MTkwNzk3LTUyNzgtNDU2ZC05OWZjLTgwNDVjNzI3YTU2Nw==
+
 vk:
   api:
     access-token: ${VK_ACCESS_TOKEN:vk1.a.yUV_JB0A1I2tANyu0kOvEy8rO3TWeyze0Jnw6jTjhfB_Pyce2P82ny1essU2sCEHhrodYeDyT6eRrZ-E6EfiC-bR1OID2YExYjnE_aM7FXPnhfDfIRoq6qqzHhrZlZULE_vw93KdZYuVfdODARYpxZxHrFMqg3YLe0tuwSRhR9qRp0LQtEL0p_cPc5L49v8UxPUIanxG8wDt4zacvTznRw}
+
 app:
   elasticsearch:
     uris: http://94.139.253.188:9200

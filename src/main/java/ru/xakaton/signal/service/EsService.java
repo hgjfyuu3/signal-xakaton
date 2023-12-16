@@ -3,6 +3,8 @@ package ru.xakaton.signal.service;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Component;
 import ru.xakaton.signal.model.LegalAct;
 
 import java.io.IOException;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -71,6 +74,32 @@ public class EsService {
         }
 
         return response.found();
+    }
+
+    public List<LegalAct> findLegalActByName(String nameOfTheLegalAct) {
+        try {
+            SearchResponse<LegalAct> response = esClient.search(s -> s
+                            .index("legal_act")
+                            .query(q -> q
+                                    .match(t -> t
+                                            .field("nameOfTheLegalAct")
+                                            .query(nameOfTheLegalAct)
+                                    )
+                            )
+                            .size(5),
+                    LegalAct.class
+            );
+
+//            var maxScore = response.hits().maxScore();
+            List<LegalAct> hits = response.hits().hits().stream()
+//                    .filter(e -> Objects.requireNonNull(e.score()).equals(maxScore))
+                    .map(Hit::source)
+                    .toList();
+            return hits;
+        } catch (IOException e) {
+            log.error("", e);
+        }
+        return null;
     }
 
 }
