@@ -7,4 +7,4 @@ vk:
 
 app:
   elasticsearch:
-    uris: http://94.139.253.188:9200
+    uris: ${ES_URI:http://94.139.253.188:9200}
