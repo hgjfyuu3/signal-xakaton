@@ -120,6 +120,9 @@ public class VkBot extends LongPollBot {
                     9. Каковы основные преимущества наших услуг по сравнению с конкурентами?
                         - Ответ: Наши услуги отличаются высоким качеством, конкурентоспособными ценами и индивидуальным подходом к каждому клиенту. Подробнее о преимуществах вы можете узнать на нашем сайте или у представителей компании.""";
             send(message.getPeerId(), faqText, getStartedKeyboard());
+        } else {
+            String responseStub = "Пожалуйста, выберите команду из списка ниже";
+            send(message.getPeerId(), responseStub, getStartedKeyboard());
         }
     }
 
