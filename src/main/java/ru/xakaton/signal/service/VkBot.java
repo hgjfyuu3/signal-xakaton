@@ -25,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class VkBot extends LongPollBot {
 
+    public static final String RESPONSE_STUB = "К сожалению, я не знаю такой команды. Пожалуйста, выберите команду из списка ниже:";
+
     @Value(value = "${vk.api.access-token}")
     private String vkAccessToken;
 
@@ -72,7 +74,7 @@ public class VkBot extends LongPollBot {
                 send(userId, gigaService.requestGiga(message.getText(), userId, "Представь что ты искусственный интеллект городской администрации, тебе нужно пожалеть пользователя и зарегистрировать обращение. Не продолжай диалог", false), getStartedKeyboard());
                 userStateMap.put(userId, UserState.START);
             } else {
-                send(userId, "К сожалению, я не знаю такой команды.", getStartedKeyboard());
+                send(userId, RESPONSE_STUB, getStartedKeyboard());
             }
         } catch (VkApiException e) {
             log.error("Ошибка при обращении к апи вк", e);
@@ -121,8 +123,7 @@ public class VkBot extends LongPollBot {
                         - Ответ: Наши услуги отличаются высоким качеством, конкурентоспособными ценами и индивидуальным подходом к каждому клиенту. Подробнее о преимуществах вы можете узнать на нашем сайте или у представителей компании.""";
             send(message.getPeerId(), faqText, getStartedKeyboard());
         } else {
-            String responseStub = "Пожалуйста, выберите команду из списка ниже";
-            send(message.getPeerId(), responseStub, getStartedKeyboard());
+            send(message.getPeerId(), RESPONSE_STUB, getStartedKeyboard());
         }
     }
 
